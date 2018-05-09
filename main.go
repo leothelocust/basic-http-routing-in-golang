@@ -1,9 +1,11 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
+	"regexp"
 )
 
 func main() {
@@ -22,6 +24,20 @@ func notFound(w http.ResponseWriter, req *http.Request) {
 }
 
 func userProfile(w http.ResponseWriter, req *http.Request) {
-	userID := req.URL.Path[len("/user/"):]
+	userID, err := getID(w, req)
+	if err != nil {
+		return
+	}
 	fmt.Fprintf(w, "User Profile: %q", userID)
+}
+
+var validPath = regexp.MustCompile("^/(user)/([0-9]+)$")
+
+func getID(w http.ResponseWriter, req *http.Request) (string, error) {
+	m := validPath.FindStringSubmatch(req.URL.Path)
+	if m == nil {
+		http.NotFound(w, req)
+		return "", errors.New("Invalid ID")
+	}
+	return m[2], nil // The ID is the second subexpression.
 }
